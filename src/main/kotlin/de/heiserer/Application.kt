@@ -7,6 +7,8 @@ import io.ktor.server.netty.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -28,8 +30,21 @@ fun Application.module() {
 }
 
 fun captureImage(rtspUrl: String, outputFolder: String) {
-    val timestamp = System.currentTimeMillis().toString()
-    val imagePath = File(outputFolder, "image_$timestamp.jpg").absolutePath
+
+    val dateFormatFolderName = SimpleDateFormat("dd_MM_yyyy")
+    val timestampFolder = dateFormatFolderName.format(Date())
+
+    val folder = File(outputFolder, timestampFolder)
+
+    if (!folder.exists()) {
+        folder.mkdirs()
+    }
+
+    val dateFormatFileName = SimpleDateFormat("HH_mm_ss")
+    val timestamp = dateFormatFileName.format(Date())
+
+    val imagePath = File(folder, "image_$timestamp.jpg").path
+
 
     val command = listOf("ffmpeg", "-i", rtspUrl, "-vframes", "1", imagePath)
     val process = ProcessBuilder(command).start()
