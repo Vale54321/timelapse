@@ -11,26 +11,43 @@ fun Application.configureRouting() {
     routing {
         get("/") {
             call.respondText("Hello World!")
-            createTimeLapse("images")
+            createTimeLapse()
         }
     }
 }
 
-fun createTimeLapse(outputFolder: String) {
+fun createFileList(folder: File): File {
+    val outputFile = File("input.txt")
+    val files = folder.listFiles { file -> file.extension == "jpg" }?.sorted() ?: emptyList()
+
+    // Write the file paths to input.txt
+    outputFile.printWriter().use { out ->
+        files.forEach { file ->
+            out.println("file '${file.absolutePath}'")
+        }
+    }
+
+    println("input.txt has been created with ${files.size} entries.")
+    return outputFile
+}
+
+fun createTimeLapse() {
     val dateFormatFolderName = SimpleDateFormat("dd_MM_yyyy")
     val timestampFolder = dateFormatFolderName.format(Date(System.currentTimeMillis())) // Yesterday's date
 
-    val folder = File(outputFolder, timestampFolder)
+    val folder = File("images", timestampFolder)
     if (!folder.exists() || folder.listFiles().isNullOrEmpty()) {
         println("No images found for creating time-lapse")
         return
     }
 
+    val inputImagesFile = createFileList(folder)
+
     val outputVideoPath = File(folder, "timelapse.mp4").path
 
     val command = listOf(
-        "ffmpeg", "-framerate", "10", "-pattern_type", "glob", "-i",
-        "${folder.path}/*.jpg", "-c:v", "libx264", "-pix_fmt", "yuv420p", outputVideoPath
+        "ffmpeg", "-f", "concat", "-safe", "0", "-i",
+        inputImagesFile.path, "-c:v", "libx264", "-pix_fmt", "yuv420p", outputVideoPath
     )
     val process = ProcessBuilder(command).start()
     println("Executed command for time-lapse: ${command.joinToString(" ")}")
