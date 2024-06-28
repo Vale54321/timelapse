@@ -1,59 +1,53 @@
 package de.heiserer.plugins
 
+import de.heiserer.ImageToolKit
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
 fun Application.configureRouting() {
     routing {
         get("/") {
-            call.respondText("Hello World!")
-            createTimeLapse()
+            val videoFolder = File("output")
+            val fileFilter = { it: File -> it.name.endsWith(".mp4") }
+            val videoFiles = videoFolder.listFiles(fileFilter)
+            val downloadLinks = videoFiles?.map { "/download/${it.name}" }
+            println(downloadLinks)
+
+            val html = """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Download MP4 Files</title>
+                </head>
+                <body>
+                    <h1>Downloadable MP4 Files</h1>
+                    <ul>
+                    """ +
+                    (downloadLinks?.joinToString("") { "<li><a href=\"$it\">$it</a></li>" } ?: "") +
+                    """
+                    </ul>
+                </body>
+                </html>
+            """
+            call.respondText(html, contentType = ContentType.Text.Html)
+            //ImageToolKit.createVideoFromImages("images/28_06_2024", "28_06_2024.mp4")
+        }
+
+        // Add a route for downloading individual files (same as before)
+        get("/download/{fileName}") {
+            val fileName = call.parameters["fileName"] ?: return@get call.respond(HttpStatusCode.NotFound)
+            val file = File("output", fileName) // Replace with actual path if needed
+            if (file.exists()) {
+                call.respondFile(file)
+            } else {
+                call.respond(HttpStatusCode.NotFound)
+            }
         }
     }
 }
 
-fun createFileList(folder: File): File {
-    val outputFile = File("input.txt")
-    val files = folder.listFiles { file -> file.extension == "jpg" }?.sorted() ?: emptyList()
 
-    // Write the file paths to input.txt
-    outputFile.printWriter().use { out ->
-        files.forEach { file ->
-            out.println("file '${file.absolutePath}'")
-        }
-    }
-
-    println("input.txt has been created with ${files.size} entries.")
-    return outputFile
-}
-
-fun createTimeLapse() {
-    val dateFormatFolderName = SimpleDateFormat("dd_MM_yyyy")
-    val timestampFolder = dateFormatFolderName.format(Date(System.currentTimeMillis())) // Yesterday's date
-
-    val folder = File("images", timestampFolder)
-    if (!folder.exists() || folder.listFiles().isNullOrEmpty()) {
-        println("No images found for creating time-lapse")
-        return
-    }
-
-    val inputImagesFile = createFileList(folder)
-
-    val outputVideoPath = File(folder, "timelapse.mp4").path
-
-    val command = listOf(
-        "ffmpeg", "-f", "concat", "-safe", "0", "-i",
-        inputImagesFile.path, "-c:v", "libx264", "-pix_fmt", "yuv420p", outputVideoPath
-    )
-    val process = ProcessBuilder(command).start()
-    println("Executed command for time-lapse: ${command.joinToString(" ")}")
-
-    val exitCode = process.waitFor()
-    if (exitCode != 0) {
-        println("Failed to create time-lapse with ffmpeg (exit code: $exitCode)")
-    }
-}
