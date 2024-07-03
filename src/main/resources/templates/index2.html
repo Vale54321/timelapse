@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>List of Videos</title>
+</head>
+<body>
+<h1>List of Videos</h1>
+<ul>
+    <li th:each="video : ${videos}">
+        <a th:href="${video.path}" th:text="${video.name}"></a>
+    </li>
+</ul>
+
+<!-- Button to trigger video creation -->
+<form action="/createVideo" method="post">
+    <button type="submit">Create Video</button>
+</form>
+</body>
+</html>

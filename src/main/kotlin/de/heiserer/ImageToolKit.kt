@@ -1,5 +1,8 @@
 package de.heiserer
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
@@ -38,28 +41,53 @@ class ImageToolKit {
             println("Image has been captured at $timestamp")
         }
 
-        fun createVideoFromImages(sourceFolder: String, videoName: String) {
-            val tempDir = copyAndRenameImages(sourceFolder) // Create temporary folder
+        suspend fun createVideoFromImages(sourceFolder: String, videoName: String, fps: Int, progressChannel: SendChannel<String>): String {
+            // Create temporary folder
+            val tempDir = copyAndRenameImages(sourceFolder)
 
             val outputPath = File("output")
-
-            if(!outputPath.exists()) {
+            if (!outputPath.exists()) {
                 outputPath.mkdirs()
             }
 
-            val outputName = File(outputPath, videoName).path
+            val outputName = videoName + "_$fps.mp4"
+            val outputFile = File(outputPath, outputName).path
 
-            val commandList = listOf("ffmpeg", "-i", tempDir.path + "/image_%05d.jpg", "-c:v", "libx264", "-pix_fmt", "yuv420p", outputName)
+            val commandList = listOf(
+                "ffmpeg", "-r", fps.toString(), "-i", "${tempDir.path}/image_%05d.jpg", "-c:v", "libx264",
+                "-crf", "23", "-pix_fmt", "yuv420p", "-y", outputFile
+            )
 
             try {
-                println(commandList)
-                val process = ProcessBuilder(commandList)
-                    .start()
+                val process = withContext(Dispatchers.IO) {
+                    ProcessBuilder(commandList)
+                        .redirectErrorStream(true)
+                        .start()
+                }
 
-                val exitCode = process.waitFor()
+                // Read output of ffmpeg process
+                val reader = process.inputStream.bufferedReader()
+                var line: String? = withContext(Dispatchers.IO) {
+                    reader.readLine()
+                }
+                while (line != null) {
+                    // Assuming ffmpeg outputs progress lines that can be parsed
+                    // You should adjust this based on ffmpeg's actual output
+                    if (line.contains("frame=")) {
+                        val progress = parseProgressFromFfmpegOutput(line)
+                        progressChannel.send("Progress: $progress%")
+                    }
+                    line = withContext(Dispatchers.IO) {
+                        reader.readLine()
+                    }
+                }
+
+                val exitCode = withContext(Dispatchers.IO) {
+                    process.waitFor()
+                }
                 if (exitCode != 0) {
                     println("Failed to create Video with ffmpeg (exit code: $exitCode)")
-                    return
+                    throw Exception("Error executing ffmpeg")
                 }
             } catch (e: IOException) {
                 throw IOException("Error creating temporary directory or running ffmpeg command", e)
@@ -68,8 +96,18 @@ class ImageToolKit {
                 tempDir.deleteRecursively() // Delete the temporary folder
                 println("Temporary folder has been deleted")
             }
+            return videoName
         }
     }
+}
+
+
+private fun parseProgressFromFfmpegOutput(line: String): Int {
+    // Parse the progress percentage from ffmpeg output
+    // Example line: frame= 1000 fps=30.0 q=24.0 size= 4200kB time=00:00:33.33 bitrate=1024.0kbits/s speed=1.50x
+    val regex = Regex("frame=\\s*(\\d+)")
+    val matchResult = regex.find(line)
+    return matchResult?.groupValues?.get(1)?.toIntOrNull() ?: 0
 }
 
 fun copyAndRenameImages(source: String): File {

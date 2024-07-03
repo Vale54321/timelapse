@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Creation Progress</title>
+    <!-- Include Thymeleaf template processing -->
+    <script src="https://cdn.jsdelivr.net/npm/@webcomponents/webcomponentsjs@latest/webcomponents-loader.js"></script>
+
+    <style>
+        #progress {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>Video Creation Progress</h1>
+<div id="progress"></div>
+
+<!-- WebSocket connection -->
+<script th:inline="javascript">
+    const socket = new WebSocket("ws://localhost:8080/videoProgress/{sessionId}"); // Replace with your server URL and session ID
+
+    socket.onmessage = function(event) {
+        const progressDiv = document.getElementById('progress');
+        progressDiv.innerHTML = event.data;
+    };
+
+    socket.onclose = function(event) {
+        if (event.wasClean) {
+            console.log(`Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+        } else {
+            console.error(`Connection died`);
+        }
+    };
+
+    socket.onerror = function(error) {
+        console.error(`WebSocket error: ${error}`);
+    };
+</script>
+</body>
+</html>

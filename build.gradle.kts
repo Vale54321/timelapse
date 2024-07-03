@@ -26,6 +26,9 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logback_version")
     testImplementation("io.ktor:ktor-server-tests-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
-    implementation ("io.ktor:ktor-websockets")
+    implementation("io.ktor:ktor-server-websockets")
+
+    implementation("io.ktor:ktor-server-thymeleaf")
+    implementation("org.thymeleaf:thymeleaf:3.1.2.RELEASE")
 
 }
