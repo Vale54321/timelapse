@@ -8,7 +8,7 @@ object VideoSessionManager {
     private val sessions = ConcurrentHashMap<String, VideoSession>()
 
     fun startSession(sessionId: String): VideoSession {
-        val session = VideoSession(sessionId)
+        val session = VideoSession()
         sessions[sessionId] = session
         return session
     }
@@ -22,7 +22,7 @@ object VideoSessionManager {
     }
 }
 
-class VideoSession(val sessionId: String) {
+class VideoSession {
     val progressChannel = Channel<String>()
 
     fun removeWebSocketSession(socket: WebSocketSession) {

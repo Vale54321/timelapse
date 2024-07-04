@@ -18,7 +18,11 @@
 
 <!-- WebSocket connection -->
 <script th:inline="javascript">
-    const socket = new WebSocket("ws://localhost:8080/videoProgress/{sessionId}"); // Replace with your server URL and session ID
+    /*<![CDATA[*/
+    const sessionId = /*[[${sessionId}]]*/"";
+    console.log("Session ID:", sessionId);
+
+    const socket = new WebSocket("ws://localhost:8080/videoProgress/" + sessionId); // Replace with your server URL and session ID
 
     socket.onmessage = function(event) {
         const progressDiv = document.getElementById('progress');
@@ -36,6 +40,7 @@
     socket.onerror = function(error) {
         console.error(`WebSocket error: ${error}`);
     };
+    /*]]>*/
 </script>
 </body>
 </html>

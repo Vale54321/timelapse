@@ -58,6 +58,8 @@ class ImageToolKit {
                 "-crf", "23", "-pix_fmt", "yuv420p", "-y", outputFile
             )
 
+            val fileCount = tempDir.listFiles()?.count { it.isFile } ?: 0
+
             try {
                 val process = withContext(Dispatchers.IO) {
                     ProcessBuilder(commandList)
@@ -75,7 +77,9 @@ class ImageToolKit {
                     // You should adjust this based on ffmpeg's actual output
                     if (line.contains("frame=")) {
                         val progress = parseProgressFromFfmpegOutput(line)
-                        progressChannel.send("Progress: $progress%")
+                        val progressPercentage = (progress.toDouble() / fileCount) * 100
+
+                        progressChannel.send(progressPercentage.toString())
                     }
                     line = withContext(Dispatchers.IO) {
                         reader.readLine()

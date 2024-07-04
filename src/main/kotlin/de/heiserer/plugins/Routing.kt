@@ -2,7 +2,6 @@ package de.heiserer.plugins
 
 import de.heiserer.ImageToolKit
 import de.heiserer.VideoSessionManager
-import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -14,8 +13,8 @@ import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import kotlinx.coroutines.channels.sendBlocking
 import io.ktor.http.HttpStatusCode
+import java.util.*
 
 
 fun Application.configureRouting() {
@@ -71,8 +70,13 @@ fun Application.configureRouting() {
             val imagesFolder = "images/$currentDate"
             val frameRate = 30
 
-            // Create video and track progress
-            val videoSession = VideoSessionManager.startSession(currentDate)
+            val uniqueId = UUID.randomUUID().toString().substring(0, 6)
+            println("WebsocketId: $uniqueId")
+
+            val videoSession = VideoSessionManager.startSession(uniqueId)
+            call.respond(ThymeleafContent("videoCreation", mapOf("sessionId" to uniqueId)))
+
+
             videoSession.progressChannel.send("Video creation started for $currentDate")
 
             try {
@@ -82,7 +86,7 @@ fun Application.configureRouting() {
                 VideoSessionManager.endSession(currentDate)
             }
 
-            call.respond(ThymeleafContent("videoCreation", mapOf("sessionId" to "session123")))
+
         }
     }
 }
