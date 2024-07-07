@@ -22,7 +22,12 @@
     const sessionId = /*[[${sessionId}]]*/"";
     console.log("Session ID:", sessionId);
 
-    const socket = new WebSocket("ws://localhost:8080/videoProgress/" + sessionId); // Replace with your server URL and session ID
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const hostname = window.location.hostname;
+    const port = window.location.port ? ':' + window.location.port : '';
+    const path = '/videoProgress/' + sessionId;
+
+    const socket = new WebSocket(protocol + '//' + hostname + port + path);
 
     socket.onmessage = function(event) {
         const progressDiv = document.getElementById('progress');

@@ -1,0 +1,26 @@
+FROM gradle:7-jdk11 AS build
+COPY --chown=gradle:gradle . /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle buildFatJar --no-daemon
+
+
+FROM nvidia/cuda:12.5.0-base-ubuntu22.04
+
+EXPOSE 8080:8080
+VOLUME /app/images
+
+ENV TZ=Europe/Berlin
+
+RUN apt-get update
+RUN apt-get install wget -y
+RUN apt-get install ffmpeg -y
+RUN wget -O - https://apt.corretto.aws/corretto.key | gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" | tee /etc/apt/sources.list.d/corretto.list
+RUN apt-get update; apt-get install -y java-21-amazon-corretto-jdk
+
+
+RUN mkdir /app
+
+COPY --from=build /home/gradle/src/build/libs/*.jar /app/ktor-docker-sample.jar
+WORKDIR /app
+ENTRYPOINT ["java","-jar","ktor-docker-sample.jar"]
