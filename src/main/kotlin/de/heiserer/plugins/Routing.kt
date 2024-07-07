@@ -14,6 +14,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.request.*
 import java.util.*
 
 
@@ -29,8 +30,14 @@ fun Application.configureRouting() {
                 TimeLapseVideo(id = it.name.hashCode(), name = it.nameWithoutExtension, path = "/download/${it.name}")
             } ?: emptyList()
 
-            call.respond(ThymeleafContent("index2", mapOf("videos" to videos)))
+            // Retrieve dates from /images folder
+            val imageFolder = File("images")
+            val dateFolders = imageFolder.listFiles { it: File -> it.isDirectory }?.map { it.name } ?: emptyList()
+
+            // Respond with Thymeleaf content, passing both videos and dates
+            call.respond(ThymeleafContent("index", mapOf("videos" to videos, "dates" to dateFolders)))
         }
+
 
         // Add a route for downloading individual files (same as before)
         get("/download/{fileName}") {
@@ -64,26 +71,26 @@ fun Application.configureRouting() {
             }
         }
 
-        get("/videoCreation") {
-            val currentDate = getCurrentDate()
+        post("/videoCreation") {
+            val parameters = call.receiveParameters()
+            val videoDate = parameters["date"]?: getCurrentDate()
 
-            val imagesFolder = "images/$currentDate"
-            val frameRate = 30
+            val imagesFolder = "images/$videoDate"
+            val frameRate = parameters["fps"]?.toIntOrNull() ?: 30 // Default to 30 if not provided
 
             val uniqueId = UUID.randomUUID().toString().substring(0, 6)
-            println("WebsocketId: $uniqueId")
 
             val videoSession = VideoSessionManager.startSession(uniqueId)
             call.respond(ThymeleafContent("videoCreation", mapOf("sessionId" to uniqueId)))
 
 
-            videoSession.progressChannel.send("Video creation started for $currentDate")
+            videoSession.progressChannel.send("Video creation started for $videoDate")
 
             try {
-                ImageToolKit.createVideoFromImages(imagesFolder, currentDate, frameRate, videoSession.progressChannel)
+                ImageToolKit.createVideoFromImages(imagesFolder, videoDate, frameRate, videoSession.progressChannel)
             } finally {
                 // Clean up after completion
-                VideoSessionManager.endSession(currentDate)
+                VideoSessionManager.endSession(videoDate)
             }
 
 

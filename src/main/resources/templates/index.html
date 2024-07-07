@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>List of Videos</title>
+</head>
+<body>
+<h1>List of Videos</h1>
+<ul>
+    <li th:each="video : ${videos}">
+        <a th:href="${video.path}" th:text="${video.name}"></a>
+    </li>
+</ul>
+
+<ul>
+    <li >
+        <p th:text="${date}"></p>
+    </li>
+</ul>
+
+<!-- Button to trigger video creation -->
+<form action="/videoCreation" method="post">
+    <label for="fps">FPS:</label>
+    <select id="fps" name="fps">
+        <option value="30" selected>30</option>
+        <option value="60">60</option>
+        <option value="90">90</option>
+    </select>
+
+    <label for="date">Datum:</label>
+    <select id="date" name="date">
+        <option th:each="date : ${dates}" th:text="${date}" th:value="${date}">
+        </option>
+    </select>
+
+    <button type="submit">Video erstellen</button>
+</form>
+</body>
+</html>

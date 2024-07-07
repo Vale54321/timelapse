@@ -1,3 +1,5 @@
+#docker run --gpus all,capabilities=video -it -p 8081:8080 -v OUTPUT_FOLDER:/app/output -v IMAGES_FOLDER:/app/images vale54321/timelapse:fe6990ac0141 bash
+
 FROM gradle:7-jdk11 AS build
 COPY --chown=gradle:gradle . /home/gradle/src
 WORKDIR /home/gradle/src
@@ -8,12 +10,14 @@ FROM nvidia/cuda:12.5.0-base-ubuntu22.04
 
 EXPOSE 8080:8080
 VOLUME /app/images
+VOLUME /app/output
 
+ENV FFMPEG_ENCODER=h264_nvenc
 ENV TZ=Europe/Berlin
 
-RUN apt-get update
-RUN apt-get install wget -y
-RUN apt-get install ffmpeg -y
+RUN apt-get update && \
+    apt-get install -y wget ffmpeg
+
 RUN wget -O - https://apt.corretto.aws/corretto.key | gpg --dearmor -o /usr/share/keyrings/corretto-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/corretto-keyring.gpg] https://apt.corretto.aws stable main" | tee /etc/apt/sources.list.d/corretto.list
 RUN apt-get update; apt-get install -y java-21-amazon-corretto-jdk

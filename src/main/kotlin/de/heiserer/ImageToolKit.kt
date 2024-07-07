@@ -42,7 +42,6 @@ class ImageToolKit {
         }
 
         suspend fun createVideoFromImages(sourceFolder: String, videoName: String, fps: Int, progressChannel: SendChannel<String>): String {
-            // Create temporary folder
             val tempDir = copyAndRenameImages(sourceFolder)
 
             val outputPath = File("output")
@@ -52,10 +51,13 @@ class ImageToolKit {
 
             val outputName = videoName + "_$fps.mp4"
             val outputFile = File(outputPath, outputName).path
+            val encoder = System.getenv("FFMPEG_ENCODER") ?: "libx264"
+
+            println("Encoder: $encoder")
 
             val commandList = listOf(
-                "ffmpeg", "-r", fps.toString(), "-i", "${tempDir.path}/image_%05d.jpg", "-c:v", "libx264",
-                "-crf", "23", "-pix_fmt", "yuv420p", "-y", outputFile
+                "ffmpeg", "-r", fps.toString(), "-i", "${tempDir.path}/image_%05d.jpg", "-c:v", encoder,
+                "-crf", "35", "-y", outputFile
             )
 
             val fileCount = tempDir.listFiles()?.count { it.isFile } ?: 0

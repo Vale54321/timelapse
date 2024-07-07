@@ -8,7 +8,9 @@ RUN apk add --no-cache ffmpeg
 
 EXPOSE 8080:8080
 VOLUME /app/images
+VOLUME /app/output
 
+ENV FFMPEG_ENCODER=libx264
 ENV TZ=Europe/Berlin
 
 RUN mkdir /app
