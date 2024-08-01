@@ -4,7 +4,7 @@ import java.io.File
 import java.io.IOException
 
 class LocalFileManager : FileManager {
-    override suspend fun saveFile(file: File, directory: String) {
+    override fun saveFile(file: File, directory: String) {
         val folder = File(directory)
 
         if (!folder.exists()) {
@@ -19,5 +19,10 @@ class LocalFileManager : FileManager {
         } catch (e: IOException) {
             println("Failed to copy file: ${e.message}")
         }
+    }
+
+    override fun moveFile(file: File, directory: String) {
+        saveFile(file, directory)
+        file.delete()
     }
 }

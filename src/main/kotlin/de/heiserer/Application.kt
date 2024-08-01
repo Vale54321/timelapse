@@ -1,6 +1,6 @@
 package de.heiserer
 
-import de.heiserer.fileManager.SshFileManager
+import de.heiserer.fileManager.SftpFileManager
 import de.heiserer.plugins.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -36,7 +36,7 @@ fun Application.module() {
     }
 
     launch {
-        val fileManager = SshFileManager(
+        val fileManager = SftpFileManager(
         sshHost = "nas.heiserer.lan",
         sshPort =305,
         username = "timelapse",

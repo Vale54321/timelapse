@@ -18,6 +18,7 @@ application {
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -33,4 +34,6 @@ dependencies {
 
     implementation ("com.jcraft:jsch:0.1.55")
     implementation("org.slf4j:slf4j-api:1.7.32")
+
+    implementation("de.heiserer:sftp:1.0-SNAPSHOT")
 }
