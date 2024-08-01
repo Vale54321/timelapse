@@ -1,5 +1,6 @@
 package de.heiserer
 
+import de.heiserer.fileManager.SshFileManager
 import de.heiserer.plugins.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -9,6 +10,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import io.ktor.server.thymeleaf.*
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 fun main() {
@@ -18,7 +22,7 @@ fun main() {
 
 fun Application.module() {
     val rtspUrl = "rtsps://10.0.0.1:7441/mstHSxlikG8CrMfh?enableSrtp"
-    val outputFolder = "images"
+    val outputFolder = createTempDirectory().path
 
     install(Thymeleaf) {
         setTemplateResolver(ClassLoaderTemplateResolver().apply {
@@ -32,12 +36,27 @@ fun Application.module() {
     }
 
     launch {
-        while (true) {
-            ImageToolKit.captureImage(rtspUrl, outputFolder)
+        val fileManager = SshFileManager(
+        sshHost = "nas.heiserer.lan",
+        sshPort =305,
+        username = "timelapse",
+        password = "E!46UZ!Ho7ac3gz!mvYv.wyz",
+        baseDirectory = "output"
+    )
+
+        while(true) {
+            launch {
+                val image = ImageToolKit.captureImage(rtspUrl, outputFolder)
+
+                val dateFormatFolderName = SimpleDateFormat("dd_MM_yyyy")
+                val timestampFolder = "images"+ File.separator + dateFormatFolderName.format(Date())
+
+                fileManager.saveFile(image, timestampFolder)
+                image.delete()
+            }
             delay(5000)
         }
     }
-
 
     configureRouting() // Existing routing configuration
 }

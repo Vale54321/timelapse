@@ -13,12 +13,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class ImageToolKit {
     companion object {
-        fun captureImage(rtspUrl: String, outputFolder: String) {
+        suspend fun captureImage(rtspUrl: String, outputFolder: String) : File {
+            println("captureImage at " + Date() )
 
-            val dateFormatFolderName = SimpleDateFormat("dd_MM_yyyy")
-            val timestampFolder = dateFormatFolderName.format(Date())
-
-            val folder = File(outputFolder, timestampFolder)
+            val folder = File(outputFolder)
 
             if (!folder.exists()) {
                 folder.mkdirs()
@@ -27,18 +25,25 @@ class ImageToolKit {
             val dateFormatFileName = SimpleDateFormat("HH_mm_ss")
             val timestamp = dateFormatFileName.format(Date())
 
-            val imagePath = File(folder, "image_$timestamp.jpg").path
+            val imageFile = File(folder, "image_$timestamp.jpg")
 
 
-            val command = listOf("ffmpeg", "-i", rtspUrl, "-vframes", "1", imagePath)
-            val process = ProcessBuilder(command).start()
+            val command = listOf("ffmpeg", "-i", rtspUrl, "-vframes", "1", imageFile.path)
 
-            val exitCode = process.waitFor()
+            val process = withContext(Dispatchers.IO) {
+                ProcessBuilder(command).start()
+            }
+
+            val exitCode = withContext(Dispatchers.IO) {
+                process.waitFor()
+            }
+
             if (exitCode != 0) {
                 println("Failed to capture image with ffmpeg (exit code: $exitCode)")
-                return
+                throw IOException("Failed to capture image with ffmpeg (exit code: $exitCode)")
             }
-            println("Image has been captured at $timestamp")
+
+            return imageFile
         }
 
         suspend fun createVideoFromImages(sourceFolder: String, videoName: String, fps: Int, progressChannel: SendChannel<String>): String {

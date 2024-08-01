@@ -31,4 +31,6 @@ dependencies {
     implementation("io.ktor:ktor-server-thymeleaf")
     implementation("org.thymeleaf:thymeleaf:3.1.2.RELEASE")
 
+    implementation ("com.jcraft:jsch:0.1.55")
+    implementation("org.slf4j:slf4j-api:1.7.32")
 }
